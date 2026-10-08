@@ -143,13 +143,7 @@ final class ClientModel implements AutoCloseable {
     static boolean drawable(Matrix4f matrix) { return matrix.determinant3x3() != 0; }
 
     private static void draw(Quad quad, ResourceLocation texture, PoseStack stack, MultiBufferSource buffers, int light) {
-        var buffer = buffers.getBuffer(RenderType.entityTranslucent(texture));
-        PoseStack.Pose pose = stack.last();
-        for (Vertex vertex : quad.vertices()) {
-            buffer.addVertex(pose, vertex.x(), vertex.y(), vertex.z()).setColor(255, 255, 255, 255)
-                .setUv(vertex.u(), vertex.v()).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
-                .setNormal(pose, quad.normal().x, quad.normal().y, quad.normal().z);
-        }
+        ClientGeometry.draw(quad, texture, stack, buffers, light);
     }
 
     private static JsonObject bodyParts() {

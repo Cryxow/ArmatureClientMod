@@ -5,10 +5,12 @@ on:
 permissions:
   contents: read
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        minecraft: ['1.21.8', '1.21.9', '1.21.10', '1.21.11', '26.1', '26.1.1', '26.1.2', '26.2']
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-java@v6.0.1
@@ -19,11 +21,28 @@ jobs:
       - name: Build the tagged version
         env:
           TAG: ${{ github.ref_name }}
+          MINECRAFT: ${{ matrix.minecraft }}
         run: |
           set -euo pipefail
           version="${TAG#v}"
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]
-          ./gradlew --no-daemon test build compileGametestJava "-PmodVersion=$version"
+          ./gradlew --no-daemon test build compileGametestJava "-PmodVersion=$version" "-PminecraftVersion=$MINECRAFT"
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: release-${{ matrix.minecraft }}
+          if-no-files-found: error
+          path: build/${{ matrix.minecraft }}/libs/*.jar
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: release-*
+          path: artifacts
+          merge-multiple: true
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -34,4 +53,5 @@ jobs:
           version="${TAG#v}"
           args=(--verify-tag --title "Armature Client $version" --generate-notes)
           if [[ "$version" == *-* ]]; then args+=(--prerelease); fi
-          gh release create "$TAG" build/libs/*.jar "${args[@]}"
+          (cd artifacts && sha256sum *.jar > SHA256SUMS.txt)
+          gh release create "$TAG" artifacts/*.jar artifacts/SHA256SUMS.txt "${args[@]}"

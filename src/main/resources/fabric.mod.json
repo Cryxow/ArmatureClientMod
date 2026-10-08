@@ -17,6 +17,6 @@
     "modmenu": ["com.armaturemc.client.ArmatureModMenu"]
   },
   "mixins": ["armature-client.mixins.json"],
-  "depends": { "fabricloader": ">=0.19.5", "minecraft": "1.21.8", "java": ">=21", "fabric-api": "*" },
-  "suggests": { "modmenu": ">=15.0.0 <16.0.0" }
+  "depends": { "fabricloader": ">=0.19.5", "minecraft": "${minecraft}", "java": ">=${java}", "fabric-api": "*" },
+  "suggests": { "modmenu": "${menu}" }
 }

@@ -16,8 +16,7 @@ import org.junit.jupiter.api.Test;
 
 class ClientHeldItemsTest {
     @org.junit.jupiter.api.BeforeAll static void bootstrap() {
-        net.minecraft.SharedConstants.tryDetectVersion();
-        net.minecraft.server.Bootstrap.bootStrap();
+        MinecraftTestBootstrap.initialize();
     }
 
     @Test void paperCompatibleNbtPreservesOutgoingItemComponentsAndEmptyHands() throws Exception {

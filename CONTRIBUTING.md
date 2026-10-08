@@ -9,14 +9,16 @@ Bukkit/Paper, BetterModel or plugin implementation dependencies to the client.
 Use JDK 25 and the checked-in wrapper. Run:
 
 ```sh
-./gradlew test build compileGametestJava
+./gradlew test build compileGametestJava -PminecraftVersion=26.2
 ```
 
 Tests cover animation clocks, sparse bone resets, transitions, legacy transforms,
 scale, armor, held items, surface separation, cache and renderer handoff. Passing
-them does not establish in-game visual compatibility.
+them does not establish in-game visual compatibility. The bytecode hook test
+checks every configured injection, shadow, accessor and invoker against the
+chosen Minecraft version. CI builds all eight supported releases separately.
 
-For renderer changes, test a connected Minecraft 1.21.8 client against a compatible
+For renderer changes, test connected clients for the Minecraft releases affected against a compatible
 Armature server. Check first equip and cached re-equip, rapid swaps, client
 rendering toggles, armor, legacy and modern rigs, held-item policy and camera
 motion. Check the shaderpack you claim to support. Keep shaderpack results separate
@@ -24,7 +26,7 @@ from vanilla results. The optional client gametests require an explicit test
 server and may launch a Minecraft window; CI only compiles them.
 
 ```sh
-./gradlew runClientGametest -ParmatureTestServer=127.0.0.1:25565
+./gradlew runClientGametest -PminecraftVersion=26.2 -ParmatureTestServer=127.0.0.1:25565
 ```
 
 ## Issues and pull requests

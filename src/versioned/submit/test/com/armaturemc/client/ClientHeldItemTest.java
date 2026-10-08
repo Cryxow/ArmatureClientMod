@@ -22,16 +22,16 @@ class ClientHeldItemTest {
 
     @Test void vanillaUseConditionsStayNeutralAndServerPolicyAliasesSurviveBothHandContexts() {
         int[] calls = {0};
-        var renderer = new net.minecraft.client.renderer.entity.ItemRenderer(null) {
-            @Override public void renderStatic(net.minecraft.world.entity.LivingEntity entity, ItemStack item,
-                    ItemDisplayContext context, com.mojang.blaze3d.vertex.PoseStack poses,
-                    net.minecraft.client.renderer.MultiBufferSource buffers, net.minecraft.world.level.Level level,
-                    int light, int overlay, int seed) {
-                assertNull(entity, "Armature items must resolve as ItemDisplays, not living-player held items");
+        var renderer = new net.minecraft.client.renderer.item.ItemModelResolver(
+                new net.minecraft.client.resources.model.ModelManager(null, null, null)) {
+            @Override public void updateForTopItem(net.minecraft.client.renderer.item.ItemStackRenderState state, ItemStack item,
+                    ItemDisplayContext context, net.minecraft.world.level.Level level,
+                    net.minecraft.world.entity.ItemOwner owner, int seed) {
+                assertNull(owner, "Armature items must resolve as ItemDisplays, not living-player held items");
                 assertFalse(new net.minecraft.client.renderer.item.properties.conditional.IsUsingItem()
-                    .get(item, null, entity, seed, context));
+                    .get(item, null, null, seed, context));
                 assertEquals(0, new net.minecraft.client.renderer.item.properties.numeric.UseDuration(false)
-                    .get(item, null, entity, seed));
+                    .get(item, null, owner, seed));
                 assertTrue(context == ItemDisplayContext.THIRD_PERSON_LEFT_HAND
                     || context == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND);
                 if (ClientHeldItem.suppressMarkerTint)

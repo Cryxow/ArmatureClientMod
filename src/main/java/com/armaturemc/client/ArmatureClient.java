@@ -255,7 +255,7 @@ public final class ArmatureClient implements ClientModInitializer {
         var client = Minecraft.getInstance(); var player = client.player;
         var motion = player.getDeltaMovement(); double speed = motion.horizontalDistance();
         return new com.armaturemc.renderer.internal.animation.MolangContext(player.getViewYRot(partialTick), player.getViewXRot(partialTick),
-            net.minecraft.util.Mth.lerp(partialTick, player.walkDistO, player.walkDist), speed * 20,
+            ClientMovement.distance(player, partialTick), speed * 20,
             0, delta, (client.level.getGameTime() + partialTick) / 20.0,
             System.nanoTime() / 1e9, (player.tickCount + partialTick) / 20.0, player.getHealth(), player.hurtTime,
             speed > .001, player.onGround(), player.isCrouching(), player.isSprinting(), player.isSwimming(), Map.of(), null);

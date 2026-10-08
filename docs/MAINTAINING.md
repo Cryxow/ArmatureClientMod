@@ -23,9 +23,11 @@ Protocol/shared behavior changes should be tested on both sides before release.
 
 ## Versioning and GitHub Releases
 
-The build defaults to 0.8.5-preview; `-PmodVersion=...` overrides it. The release
-workflow builds the version from its `v...` tag, runs headless tests, compiles
-gametests and uploads the remapped runtime JAR plus source JAR. Tags containing
+The build defaults to 0.9.0-preview; `-PmodVersion=...` overrides it. The release
+workflow builds all eight Minecraft targets from its `v...` tag, runs headless
+tests and bytecode hook checks, compiles gametests, and uploads one runtime JAR
+plus source JAR per target with SHA256SUMS.txt. Targets through 1.21.11 use
+Loom's remapping plugin; 26.x uses unobfuscated Minecraft and Java 25. Tags containing
 a hyphen produce GitHub prereleases. A published release does not imply that
 every shaderpack has been tested.
 
@@ -36,3 +38,27 @@ has read-only permissions. Public Maven publishing is not configured.
 
 Do not put Minecraft binaries or Gradle caches in Git. The wrapper JAR is the
 only build tool binary committed. Preserve the test fixtures and MIT notices.
+
+## Version adapters
+
+The authored source is in `src/main` and `shared`. `prepareMinecraftSources`
+selects replacements from `src/versioned` and applies narrow API renames. Output
+is generated under the target's build directory; never edit or commit it.
+
+- `submit`: Minecraft 1.21.9+ submits geometry, equipment and neutral held items
+  to the native render collector. Movement samples interpolate `moveDist`.
+- `calendar`: 26.x applies camera animation before frustum/projection extraction
+  and reads world/hand FOV separately; networking and GUI use the new API names.
+  Tests initialize registry components after creating the vanilla lookup.
+- `next`: 26.2 hand submission and frame update hooks and GUI ownership changes.
+
+Resource IDs use `Identifier` and render types move to `rendertype` from 1.21.11.
+All adapters use Minecraft's
+rendering abstractions; no raw OpenGL calls are used. This supports the 26.2
+backend API without claiming live Vulkan or Iris shaderpack validation.
+
+To add a target, update `gradle/minecraft-versions.properties`, both workflow
+matrices and the README table, then compile/test against that exact game JAR.
+Run `MinecraftHooksTest` and connected-client checks before claiming runtime parity.
+Export retains authored sources and all adapters, rather than a single target's
+generated sources.

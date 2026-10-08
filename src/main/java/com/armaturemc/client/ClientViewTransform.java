@@ -1,7 +1,6 @@
 package com.armaturemc.client;
 
 import com.armaturemc.client.protocol.ClientProtocol;
-import com.armaturemc.client.mixin.GameRendererAccessor;
 import net.minecraft.client.Minecraft;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
@@ -12,10 +11,8 @@ final class ClientViewTransform {
 
     static Matrix4f forFrame(ClientProtocol.Frame frame, float partialTick) {
         Minecraft client = Minecraft.getInstance();
-        var camera = client.gameRenderer.getMainCamera();
-        var renderer = (GameRendererAccessor)client.gameRenderer;
-        float handFov = renderer.armature$getFov(camera, partialTick, false);
-        float targetFov = frame.view().fov() == 0 ? renderer.armature$getFov(camera, partialTick, true) : frame.view().fov();
+        float handFov = ClientProjection.fov(client, partialTick, false);
+        float targetFov = frame.view().fov() == 0 ? ClientProjection.fov(client, partialTick, true) : frame.view().fov();
         float originY = 0;
         if (frame.view().mountedOrigin()) {
             // Legacy carrier attachment, expressed locally. Subtracting the interpolated

@@ -14,7 +14,7 @@ SLF4J are development/runtime dependencies, not vendored third-party sources in
 this repository. Their own licenses and distribution terms continue to apply.
 The Gradle wrapper is provided by Gradle under Apache License 2.0, included in
 `gradle/wrapper/LICENSE`:
-https://github.com/gradle/gradle/blob/v9.4.1/LICENSE
+https://github.com/gradle/gradle/blob/v9.5.1/LICENSE
 
 Test fixtures are included for renderer regression tests and do not enter the
 runtime JAR. Server model bundles and server resource packs are not distributed
