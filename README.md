@@ -30,7 +30,8 @@ snapshots and versions outside the table below are unsupported.
 2. Install [Fabric API](https://modrinth.com/mod/fabric-api), targeting that release.
 3. Download the mod JAR from [Releases](https://github.com/Cryxow/ArmatureClientMod/releases)
    and put it in the instance's `mods` directory. Match the Minecraft version in
-   the filename, and install only one Armature Client JAR. Do not install the `-sources.jar`.
+   the filename, and install only one Armature Client JAR. Releases contain only
+   installable JARs; developers can use GitHub's source archives or clone the repository.
 4. Optionally install [Mod Menu](https://modrinth.com/mod/modmenu), using the table.
 5. Connect to a server using the compatible Armature plugin with client rendering
    enabled and the native renderer selected. The current client speaks protocol **9**.

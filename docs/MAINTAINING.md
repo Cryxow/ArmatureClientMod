@@ -26,7 +26,10 @@ Protocol/shared behavior changes should be tested on both sides before release.
 The build defaults to 0.9.0-preview; `-PmodVersion=...` overrides it. The release
 workflow builds all eight Minecraft targets from its `v...` tag, runs headless
 tests and bytecode hook checks, compiles gametests, and uploads one runtime JAR
-plus source JAR per target with SHA256SUMS.txt. Targets through 1.21.11 use
+per target with SHA256SUMS.txt. Source JARs remain available from local builds
+and Maven publishing but are excluded from CI artifacts and GitHub Releases;
+developers can clone the repository or use GitHub's automatic source archives.
+Targets through 1.21.11 use
 Loom's remapping plugin; 26.x uses unobfuscated Minecraft and Java 25. Tags containing
 a hyphen produce GitHub prereleases. A published release does not imply that
 every shaderpack has been tested.

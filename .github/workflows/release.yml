@@ -31,7 +31,9 @@ jobs:
         with:
           name: release-${{ matrix.minecraft }}
           if-no-files-found: error
-          path: build/${{ matrix.minecraft }}/libs/*.jar
+          path: |
+            build/${{ matrix.minecraft }}/libs/*.jar
+            !build/${{ matrix.minecraft }}/libs/*-sources.jar
   release:
     needs: build
     runs-on: ubuntu-latest

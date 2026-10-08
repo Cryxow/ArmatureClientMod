@@ -29,4 +29,6 @@ jobs:
         with:
           name: armature-client-${{ matrix.minecraft }}-${{ github.sha }}
           if-no-files-found: error
-          path: build/${{ matrix.minecraft }}/libs/*.jar
+          path: |
+            build/${{ matrix.minecraft }}/libs/*.jar
+            !build/${{ matrix.minecraft }}/libs/*-sources.jar
