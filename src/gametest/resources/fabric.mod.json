@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "armature_client_test",
+  "version": "1.0.0",
+  "name": "Armature viewport integration tests",
+  "environment": "client",
+  "entrypoints": { "fabric-client-gametest": ["com.armaturemc.client.ViewportGameTest"] },
+  "depends": { "armature_client": "*" }
+}

@@ -1,0 +1,9 @@
+{
+  "armature_client.config.title": "Armature Customization",
+  "armature_client.config.rendering": "Modded rendering: %s",
+  "armature_client.config.enabled_description": "The mod renders models and animates every frame.",
+  "armature_client.config.disabled_description": "The plugin renders models after its renderer pack loads. Your choice is saved.",
+  "armature_client.config.switch_pending": "Switching: waiting for resources to finish reloading.",
+  "armature_client.config.switch_failed": "Handoff unavailable. Keeping the current renderer. Check the pack, then toggle this button again.",
+  "armature_client.config.save_failed": "Unable to save this setting."
+}

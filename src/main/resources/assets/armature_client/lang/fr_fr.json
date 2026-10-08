@@ -1,0 +1,9 @@
+{
+  "armature_client.config.title": "Personnalisation Armature",
+  "armature_client.config.rendering": "Rendu moddé : %s",
+  "armature_client.config.enabled_description": "Le mod affiche les modèles et anime à chaque image.",
+  "armature_client.config.disabled_description": "Le plugin affiche les modèles après chargement de son pack de rendu. Le choix est sauvegardé.",
+  "armature_client.config.switch_pending": "Changement en cours : attente du rechargement des ressources.",
+  "armature_client.config.switch_failed": "Relais indisponible. Le rendu actuel est conservé. Vérifie le pack puis réactive/désactive ce bouton.",
+  "armature_client.config.save_failed": "Impossible de sauvegarder le réglage."
+}

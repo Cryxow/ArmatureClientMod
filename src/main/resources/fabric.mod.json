@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "armature_client",
+  "version": "${version}",
+  "name": "Armature Client",
+  "description": "Optional viewport first-person renderer for the Armature plugin.",
+  "authors": ["Cryxow"],
+  "license": "MIT",
+  "contact": {
+    "homepage": "https://github.com/Cryxow/ArmatureClientMod",
+    "sources": "https://github.com/Cryxow/ArmatureClientMod",
+    "issues": "https://github.com/Cryxow/ArmatureClientMod/issues"
+  },
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.armaturemc.client.ArmatureClient"],
+    "modmenu": ["com.armaturemc.client.ArmatureModMenu"]
+  },
+  "mixins": ["armature-client.mixins.json"],
+  "depends": { "fabricloader": ">=0.19.5", "minecraft": "1.21.8", "java": ">=21", "fabric-api": "*" },
+  "suggests": { "modmenu": ">=15.0.0 <16.0.0" }
+}

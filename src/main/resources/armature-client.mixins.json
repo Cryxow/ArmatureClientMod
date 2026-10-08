@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "com.armaturemc.client.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["ItemInHandRendererMixin", "EntityRenderDispatcherMixin", "GameRendererAccessor", "GameRendererMixin", "CameraMixin", "ConstantItemTintMixin", "MinecraftReloadMixin"],
+  "injectors": { "defaultRequire": 1 }
+}
