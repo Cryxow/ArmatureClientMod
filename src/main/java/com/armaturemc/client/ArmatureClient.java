@@ -13,7 +13,6 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.InteractionHand;
-import org.joml.Matrix4f;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +20,8 @@ public final class ArmatureClient implements ClientModInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger("ArmatureClient");
     private static final Hand[] HANDS = java.util.stream.IntStream.range(0, ClientProtocol.MODEL_CHANNELS)
         .mapToObj(Hand::new).toArray(Hand[]::new);
-    private static final ClientModelCache<ClientModel> CACHE = new ClientModelCache<>(8, 64L * 1024 * 1024, ClientModel::close);
+    private static final ClientModelSessions<ClientModel> SESSIONS = new ClientModelSessions<>(8, 64L * 1024 * 1024,
+        ClientModel::freshPresentation, ClientModel::cacheBytes, ClientModel::close);
     private static final ExecutorService MODELS = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
         new ArrayBlockingQueue<>(2), runnable -> {
             Thread thread = new Thread(runnable, "Armature model compiler"); thread.setDaemon(true); return thread;
@@ -75,7 +75,7 @@ public final class ArmatureClient implements ClientModInitializer {
                 .anyMatch(resources -> resources.packId().endsWith("/" + pack));
             var ready = handoff.ready(resourceReloads > 0 || client.getOverlay() != null, present);
             if (ready != null) send(ready);
-            if (handoff.active() && Arrays.stream(HANDS).anyMatch(hand -> hand.current != null && !hand.owned())) {
+            if (handoff.active() && Arrays.stream(HANDS).anyMatch(hand -> hand.bound() && !hand.owned())) {
                 fail("Armature frame stream expired", new IllegalStateException("No fresh frame for one second"));
                 return;
             }
@@ -104,7 +104,7 @@ public final class ArmatureClient implements ClientModInitializer {
             if (message instanceof ClientProtocol.ModelChunk chunk) {
                 Hand hand = HANDS[chunk.slot()];
                 // A cache hit already owns this exact bundle; chunks sent before Ready are harmless.
-                if (hand.model != null && chunk.hash().equals(hand.hash)) return;
+                if (hand.model() != null && chunk.hash().equals(hand.hash)) return;
                 if (chunk.index() == 0) {
                     // Options and the ownership frame now precede chunks. Do not discard them.
                     if (hand.hash != null && !chunk.hash().equals(hand.hash)) hand.clear();
@@ -126,8 +126,12 @@ public final class ArmatureClient implements ClientModInitializer {
                     Minecraft.getInstance().execute(() -> {
                         if (generation != connectionGeneration || epoch != hand.epoch) return;
                         try {
-                            model.upload(hash, chunk.slot()); hand.model = model; hand.hash = hash;
+                            if (hand.current == null || !SESSIONS.accepts(hand.slot, hand.current.session(), hash)) return;
+                            model.upload(hash, chunk.slot());
+                            if (!SESSIONS.attach(hand.slot, hand.current.session(), hash, model)) { model.close(); return; }
+                            hand.hash = hash;
                             if (model.animation != null && hand.options != null) model.animation.configure(hand.options);
+                            hand.optionsPending = false;
                             if (hand.current != null && hash.equals(hand.current.hash()))
                                 model.receive(hand.current, hand.receivedAt, viewer(1.0 / 60));
                             send(new ClientProtocol.Ready(chunk.slot(), hash));
@@ -137,33 +141,33 @@ public final class ArmatureClient implements ClientModInitializer {
             } else if (message instanceof ClientProtocol.Frame frame) {
                 Hand hand = HANDS[frame.slot()];
                 if (hand.current != null && frame.sequence() <= hand.current.sequence()) return;
-                if (hand.hash != null && !frame.hash().equals(hand.hash)) {
+                if ((hand.hash != null && !frame.hash().equals(hand.hash))
+                    || (hand.current != null && !frame.session().equals(hand.current.session()))) {
                     ClientHeldItems incomingItems = hand.items;
+                    var incomingOptions = hand.options;
                     hand.clear();
+                    hand.options = incomingOptions; hand.optionsPending = true;
                     if (incomingItems != null && incomingItems.session().equals(frame.session())) hand.items = incomingItems;
                 }
                 hand.hash = frame.hash();
-                if (hand.model == null) {
-                    hand.model = CACHE.take(frame.slot(), frame.hash());
-                    if (hand.model != null) {
-                        if (hand.model.animation != null && hand.options != null) hand.model.animation.configure(hand.options);
-                        send(new ClientProtocol.Ready(frame.slot(), frame.hash()));
-                    }
-                }
-                if (hand.current != null && !frame.session().equals(hand.current.session())
-                    && hand.model != null && hand.model.animation != null) {
-                    hand.model.animation.resetPlayback();
-                    if (hand.options != null) hand.model.animation.configure(hand.options);
+                ClientModel previousModel = hand.model();
+                ClientModel model = SESSIONS.offer(frame.slot(), frame.session(), frame.hash());
+                if (model != null) {
+                    if ((model != previousModel || hand.optionsPending) && model.animation != null && hand.options != null)
+                        model.animation.configure(hand.options);
+                    hand.optionsPending = false;
+                    if (model != previousModel) send(new ClientProtocol.Ready(frame.slot(), frame.hash()));
                 }
                 hand.current = frame; hand.receivedAt = System.nanoTime();
-                if (hand.model != null) hand.model.receive(frame, hand.receivedAt, viewer(1.0 / 60));
+                if (model != null) model.receive(frame, hand.receivedAt, viewer(1.0 / 60));
                 hand.entities.clear(); for (int id : frame.entityIds()) hand.entities.add(id);
             } else if (message instanceof ClientProtocol.HeldItems items) {
                 HANDS[items.slot()].items = ClientHeldItems.decode(items, Minecraft.getInstance().level.registryAccess());
             } else if (message instanceof ClientProtocol.Options options) {
                 Hand hand = HANDS[options.slot()];
                 hand.options = com.google.gson.JsonParser.parseString(options.json()).getAsJsonObject();
-                if (hand.model != null && hand.model.animation != null) hand.model.animation.configure(hand.options);
+                // Options precede the ownership frame and may belong to a different session.
+                hand.optionsPending = true;
             } else if (message instanceof ClientProtocol.Clear clear) HANDS[clear.slot()].clear();
         } catch (RuntimeException failure) { fail("Armature client session reset", failure); }
     }
@@ -202,16 +206,16 @@ public final class ArmatureClient implements ClientModInitializer {
             player.getViewYRot(partialTick), player.getViewXRot(partialTick));
         try {
             for (Hand hand : HANDS) {
-                hand.frameMatrices = Map.of();
                 if (!hand.active()) continue;
-                if (hand.model.animation == null) throw new IllegalArgumentException("Model lacks client hierarchy");
-                hand.model.animation.capture(input, frameAt);
-                hand.frameMatrices = hand.model.animation.matrices(frameAt, context, hand.current.bones());
+                var model = hand.model();
+                if (model.animation == null) throw new IllegalArgumentException("Model lacks client hierarchy");
+                model.animation.capture(input, frameAt);
+                model.frameMatrices = model.animation.matrices(frameAt, context, hand.current.bones());
             }
             for (int slot = 0; slot < ClientProtocol.MODEL_CHANNELS; slot += 2) {
                 Hand hand = HANDS[slot];
                 if (hand.active() && hand.current.replaceHand()) {
-                    frameCamera = hand.model.animation.cameraEffect(frameAt, context); break;
+                    frameCamera = hand.model().animation.cameraEffect(frameAt, context); break;
                 }
             }
         } catch (RuntimeException failure) { fail("Frame sampling failed", failure); }
@@ -236,7 +240,7 @@ public final class ArmatureClient implements ClientModInitializer {
             try {
                 stack.mulPose(cameraEffect().handTransform());
                 stack.mulPose(ClientViewTransform.forFrame(hand.current, partialTick));
-                hand.model.render(hand.frameMatrices, stack, buffers, light,
+                hand.model().render(hand.model().frameMatrices, stack, buffers, light,
                     hand.items != null && hand.items.session().equals(hand.current.session()) ? hand.items : null);
             } catch (RuntimeException failure) { fail("Viewport rendering failed", failure); return; }
             finally { stack.popPose(); }
@@ -274,39 +278,34 @@ public final class ArmatureClient implements ClientModInitializer {
     }
     private static void reset() {
         accepting = false;
-        connectionGeneration++; for (Hand hand : HANDS) hand.clear(); CACHE.clear(); lastHello = lastFrameAt = frameAt = 0;
+        connectionGeneration++; SESSIONS.reset(); for (Hand hand : HANDS) hand.clear(); lastHello = lastFrameAt = frameAt = 0;
         frameCamera = ClientCameraEffect.IDENTITY;
     }
     private static final class Hand {
         final int slot;
         Hand(int slot) { this.slot = slot; }
-        ModelTransfer transfer; ClientModel model; String hash;
+        ModelTransfer transfer; String hash;
         com.google.gson.JsonObject options;
+        boolean optionsPending;
         ClientProtocol.Frame current;
         ClientHeldItems items;
         long receivedAt, epoch;
         final Set<Integer> entities = new HashSet<>();
-        Map<String, Matrix4f> frameMatrices = Map.of();
+        ClientModel model() { return SESSIONS.get(slot); }
         boolean active() {
-            return model != null && owned();
+            return model() != null && owned();
         }
         boolean owned() {
-            return current != null
+            return bound()
                 && ClientRendererHandoff.frameFresh(System.nanoTime(), receivedAt, resourceReloads > 0, resourceReloadFinished);
         }
+        boolean bound() { return current != null && SESSIONS.matches(slot, current.session(), current.hash()); }
         void clear() {
             epoch++;
-            if (model != null) {
-                if (model.animation != null) model.animation.resetPlayback();
-                CACHE.put(slot, hash, model, model.cacheBytes());
-            }
-            model = null; transfer = null; hash = null; current = null; receivedAt = 0;
+            SESSIONS.clear(slot);
+            transfer = null; hash = null; current = null; receivedAt = 0;
             items = null;
-            entities.clear(); options = null;
-            frameMatrices = Map.of();
-        }
-        Map<String, Matrix4f> matrices(float partialTick) {
-            return frameMatrices;
+            entities.clear(); options = null; optionsPending = false;
         }
     }
 }

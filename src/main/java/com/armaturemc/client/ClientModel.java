@@ -31,13 +31,25 @@ final class ClientModel implements AutoCloseable {
     private JsonObject control = new JsonObject();
     private final Map<String, Texture> sources;
     private final long cacheBytes;
-    private final Map<String, ResourceLocation> textures = new HashMap<>();
+    private final ClientSharedTextures<ResourceLocation> textures;
+    Map<String, Matrix4f> frameMatrices = Map.of();
+    private boolean closed;
     private ClientModel(List<Part> parts, Map<String, Texture> textures, ClientAnimation animation, long cacheBytes) {
-        this.parts = List.copyOf(parts); this.sources = Map.copyOf(textures);
+        this(parts, textures, animation, cacheBytes, new ClientSharedTextures<>(
+            location -> Minecraft.getInstance().getTextureManager().release(location)));
+    }
+    private ClientModel(List<Part> parts, Map<String, Texture> sources, ClientAnimation animation, long cacheBytes,
+                        ClientSharedTextures<ResourceLocation> textures) {
+        this.parts = List.copyOf(parts); this.sources = Map.copyOf(sources); this.textures = textures;
         this.animation = animation; this.cacheBytes = cacheBytes;
     }
 
     long cacheBytes() { return cacheBytes; }
+
+    ClientModel freshPresentation() {
+        if (closed) throw new IllegalStateException("Presentation already closed");
+        return new ClientModel(parts, sources, animation == null ? null : animation.fresh(), cacheBytes, textures.retain());
+    }
 
     /** Called on a worker. Geometry and PNG-header budgets are checked before allocating GPU images. */
     static ClientModel parse(byte[] bytes) {
@@ -221,7 +233,7 @@ final class ClientModel implements AutoCloseable {
     }
 
     @Override public void close() {
-        textures.values().forEach(location -> Minecraft.getInstance().getTextureManager().release(location)); textures.clear();
+        if (!closed) { closed = true; textures.close(); }
     }
 
     static void compileCube(JsonObject cube, Vector3f bonePivot, Map<String, Texture> textures, List<Quad> result) {

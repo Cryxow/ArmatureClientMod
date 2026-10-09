@@ -61,6 +61,15 @@ final class ClientAnimation {
             .getUnnormalizedRotation(new org.joml.Quaternionf()).invert();
     }
 
+    private ClientAnimation(ClientAnimation source) {
+        hierarchy = source.hierarchy; identity = source.identity; clips = source.clips;
+        parents.putAll(source.parents); physicsBones.addAll(source.physicsBones);
+        cameraBone = source.cameraBone;
+        cameraRest = source.cameraRest == null ? null : new org.joml.Quaternionf(source.cameraRest);
+    }
+
+    ClientAnimation fresh() { return new ClientAnimation(this); }
+
     void configure(JsonObject options) {
         if (options.has("basis")) {
             var basis = options.getAsJsonArray("basis");
