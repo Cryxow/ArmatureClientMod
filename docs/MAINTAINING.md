@@ -23,7 +23,7 @@ Protocol/shared behavior changes should be tested on both sides before release.
 
 ## Versioning and GitHub Releases
 
-The build defaults to 0.9.0-preview; `-PmodVersion=...` overrides it. The release
+The build defaults to 0.9.1-preview; `-PmodVersion=...` overrides it. The release
 workflow builds all eight Minecraft targets from its `v...` tag, runs headless
 tests and bytecode hook checks, compiles gametests, and uploads one runtime JAR
 per target with SHA256SUMS.txt. Source JARs remain available from local builds
@@ -65,3 +65,11 @@ matrices and the README table, then compile/test against that exact game JAR.
 Run `MinecraftHooksTest` and connected-client checks before claiming runtime parity.
 Export retains authored sources and all adapters, rather than a single target's
 generated sources.
+
+Armor uses `ClientArmorMesh`, which overrides `ModelPart.Cube.compile` to emit
+the authored body-local faces through Minecraft's equipment consumers. Do not
+replace it with a constructor placeholder and later polygon edits: Sodium
+caches the constructor cuboid, so those edits leave armor at the placeholder's
+size and position. Equipment still owns textures, dye, trims and glint. Headless
+tests check dispatch, emitted vertices and equipment attributes; visual Sodium
+and Iris checks require a connected client.

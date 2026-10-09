@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "com.armaturemc"
-version = providers.gradleProperty("modVersion").orElse("0.9.0-preview").get()
+version = providers.gradleProperty("modVersion").orElse("0.9.1-preview").get()
 val minecraftVersion = providers.gradleProperty("minecraftVersion").orElse("1.21.8").get()
 val versionMatrix = Properties().apply { file("gradle/minecraft-versions.properties").inputStream().use { load(it) } }
 require(versionMatrix.containsKey("$minecraftVersion.api")) { "Unsupported Minecraft target: $minecraftVersion" }

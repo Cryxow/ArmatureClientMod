@@ -10,7 +10,6 @@ import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.entity.layers.EquipmentLayerRenderer;
 import net.minecraft.client.resources.model.EquipmentAssetManager;
 import net.minecraft.client.resources.model.EquipmentClientInfo;
-import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.entity.EquipmentSlot;
 import org.joml.Vector3f;
@@ -59,20 +58,7 @@ public final class ClientArmor {
             List<ClientModel.Quad> quads = new ArrayList<>();
             ClientModel.compileCube(cube, new Vector3f(8, 8, 8), Map.of("0", uv, "1", uv), quads);
             if (quads.isEmpty() || quads.size() > 6) throw new IllegalArgumentException("Invalid armor faces");
-            Set<Direction> directions = EnumSet.noneOf(Direction.class);
-            for (int i = 0; i < quads.size(); i++) directions.add(Direction.values()[i]);
-            // Model's renderer accepts ModelPart geometry. Replace this private cube's polygons
-            // with the already compiled quads; no global vanilla model is modified.
-            ModelPart.Cube mesh = new ModelPart.Cube(0, 0, 0, 0, 0, 1, 1, 1,
-                0, 0, 0, false, 16, 16, directions);
-            for (int i = 0; i < quads.size(); i++) {
-                var quad = quads.get(i);
-                ModelPart.Vertex[] vertices = quad.vertices().stream().map(vertex ->
-                    new ModelPart.Vertex(vertex.x() * 16, vertex.y() * 16, vertex.z() * 16,
-                        vertex.u(), vertex.v())).toArray(ModelPart.Vertex[]::new);
-                mesh.polygons[i] = new ModelPart.Polygon(vertices, new Vector3f(quad.normal()));
-            }
-            meshes.add(mesh); allQuads.addAll(quads);
+            meshes.add(new ClientArmorMesh(quads)); allQuads.addAll(quads);
             }
             Model model = new Model.Simple(new ModelPart(meshes, Map.of()), RenderType::armorCutoutNoCull);
             result.add(new Layer(slot, model, List.copyOf(allQuads)));
