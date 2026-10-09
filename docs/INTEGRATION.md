@@ -17,7 +17,7 @@ In your own Fabric project's `build.gradle.kts`:
 ```kotlin
 repositories { mavenLocal() }
 dependencies {
-    modImplementation("com.armaturemc:armature-client-fabric-1.21.8:0.9.2-preview")
+    modImplementation("com.armaturemc:armature-client-fabric-1.21.8:0.9.3-preview")
 }
 ```
 
@@ -26,8 +26,8 @@ nest Armature Client instead:
 
 ```kotlin
 dependencies {
-    modImplementation("com.armaturemc:armature-client-fabric-1.21.8:0.9.2-preview")
-    include("com.armaturemc:armature-client-fabric-1.21.8:0.9.2-preview")
+    modImplementation("com.armaturemc:armature-client-fabric-1.21.8:0.9.3-preview")
+    include("com.armaturemc:armature-client-fabric-1.21.8:0.9.3-preview")
 }
 ```
 
@@ -44,7 +44,7 @@ For Minecraft 26.x, build the exact target and use ordinary `implementation`
 instead of `modImplementation`, with the `net.fabricmc.fabric-loom` plugin.
 These versions are unobfuscated and require Java 25; do not reuse a 1.21.x JAR.
 For example the 26.2 coordinate is
-`com.armaturemc:armature-client-fabric-26.2:0.9.2-preview`.
+`com.armaturemc:armature-client-fabric-26.2:0.9.3-preview`.
 
 ## Use your own settings screen
 

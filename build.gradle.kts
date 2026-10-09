@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "com.armaturemc"
-version = providers.gradleProperty("modVersion").orElse("0.9.2-preview").get()
+version = providers.gradleProperty("modVersion").orElse("0.9.3-preview").get()
 val minecraftVersion = providers.gradleProperty("minecraftVersion").orElse("1.21.8").get()
 val versionMatrix = Properties().apply { file("gradle/minecraft-versions.properties").inputStream().use { load(it) } }
 require(versionMatrix.containsKey("$minecraftVersion.api")) { "Unsupported Minecraft target: $minecraftVersion" }
@@ -115,6 +115,8 @@ val prepareMinecraftSources = tasks.register("prepareMinecraftSources") {
                 .replace("PlayerSkin.Model.SLIM", "net.minecraft.world.entity.player.PlayerModelType.SLIM")
                 .replace("getSkin().texture()", "getSkin().body().texturePath()")
                 .replace("getModelManager().getAtlas(", "getAtlasManager().getAtlasOrThrow(")
+                // AtlasManager indexes definitions, whereas ModelManager used texture paths.
+                .replace("Sheets.ARMOR_TRIMS_SHEET", "net.minecraft.data.AtlasIds.ARMOR_TRIMS")
                 .replace("layer.model(), item,", "layer.model(), net.minecraft.util.Unit.INSTANCE, item,")
                 .replace("buffers, light, player.getSkin().body().texturePath());",
                     "buffers, light, player.getSkin().body().texturePath(), 0, 1);")

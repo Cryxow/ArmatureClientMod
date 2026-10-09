@@ -23,7 +23,7 @@ Protocol/shared behavior changes should be tested on both sides before release.
 
 ## Versioning and GitHub Releases
 
-The build defaults to 0.9.2-preview; `-PmodVersion=...` overrides it. The release
+The build defaults to 0.9.3-preview; `-PmodVersion=...` overrides it. The release
 workflow builds all eight Minecraft targets from its `v...` tag, runs headless
 tests and bytecode hook checks, compiles gametests, and uploads one runtime JAR
 per target with SHA256SUMS.txt. Source JARs remain available from local builds
@@ -73,6 +73,12 @@ caches the constructor cuboid, so those edits leave armor at the placeholder's
 size and position. Equipment still owns textures, dye, trims and glint. Headless
 tests check dispatch, emitted vertices and equipment attributes; visual Sodium
 and Iris checks require a connected client.
+
+From 1.21.9, `AtlasManager.getAtlasOrThrow` expects `AtlasIds.ARMOR_TRIMS`,
+the atlas definition ID. The older `ModelManager.getAtlas` expects
+`Sheets.ARMOR_TRIMS_SHEET`, its texture path. Mixing these identifiers breaks
+the resource reload at startup. `MinecraftHooksTest` compares our armor lookup
+with vanilla equipment's constructor for every target, without starting a GPU.
 
 `ClientModelSessions` associates mutable animation and the last viewport sample
 with the protocol session UUID, rather than its current channel or asset hash.

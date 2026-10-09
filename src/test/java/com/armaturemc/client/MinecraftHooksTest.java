@@ -16,6 +16,27 @@ import static org.junit.jupiter.api.Assertions.*;
 class MinecraftHooksTest {
     private static final String MIXIN = "Lorg/spongepowered/asm/mixin/";
 
+    @Test void armorReloadUsesTheSameAtlasLookupAsVanillaEquipment() throws Exception {
+        var client = read("com/armaturemc/client/ClientArmor").methods.stream()
+            .filter(method -> method.name.equals("reload")).findFirst().orElseThrow();
+        var vanilla = read("net/minecraft/client/renderer/entity/EntityRendererProvider$Context").methods.stream()
+            .filter(method -> method.name.equals("<init>")).findFirst().orElseThrow();
+        assertEquals(armorAtlasLookup(vanilla), armorAtlasLookup(client),
+            "Armor reload must use the atlas definition ID for AtlasManager, not its texture path");
+    }
+
+    private static List<String> armorAtlasLookup(MethodNode method) {
+        for (var instruction : method.instructions) {
+            if (!(instruction instanceof MethodInsnNode call) || !call.name.startsWith("getAtlas")) continue;
+            var previous = call.getPrevious();
+            while (previous != null && previous.getOpcode() < 0) previous = previous.getPrevious();
+            if (previous instanceof FieldInsnNode field && field.getOpcode() == Opcodes.GETSTATIC
+                && field.name.startsWith("ARMOR_TRIMS"))
+                return List.of(call.owner, call.name, call.desc, field.owner, field.name, field.desc);
+        }
+        return fail("Missing vanilla armor atlas lookup in " + method.name);
+    }
+
     @Test void everyConfiguredHookMatchesTheTargetMinecraftVersion() throws Exception {
         try (var stream = getClass().getClassLoader().getResourceAsStream("armature-client.mixins.json")) {
             assertNotNull(stream);
@@ -82,7 +103,7 @@ class MinecraftHooksTest {
         try (InputStream stream = getClass().getClassLoader().getResourceAsStream(name + ".class")) {
             assertNotNull(stream, name);
             var node = new ClassNode();
-            new ClassReader(stream).accept(node, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+            new ClassReader(stream).accept(node, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
             return node;
         }
     }
