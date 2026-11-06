@@ -21,6 +21,25 @@ class MinecraftHooksTest {
             .filter(method -> method.name.equals("reload")).findFirst().orElseThrow();
         var vanilla = read("net/minecraft/client/renderer/entity/EntityRendererProvider$Context").methods.stream()
             .filter(method -> method.name.equals("<init>")).findFirst().orElseThrow();
+        var paletteConstructor = vanilla.instructions.iterator();
+        while (paletteConstructor.hasNext()) {
+            if (!(paletteConstructor.next() instanceof MethodInsnNode call)
+                || !call.owner.equals("net/minecraft/client/renderer/entity/layers/EquipmentLayerRenderer")
+                || !call.name.equals("<init>") || !call.desc.contains("PalettedTextureManager;")) continue;
+            var instructions = new ArrayList<MethodInsnNode>();
+            for (var instruction : client.instructions)
+                if (instruction instanceof MethodInsnNode method) instructions.add(method);
+            assertTrue(instructions.stream().anyMatch(method -> method.owner.equals(call.owner)
+                && method.name.equals(call.name) && method.desc.equals(call.desc)),
+                "Armor reload must construct the same equipment renderer as vanilla");
+            assertTrue(instructions.stream().anyMatch(method -> method.owner.equals("net/minecraft/client/Minecraft")
+                && method.name.equals("getPalettedTextureManager")
+                && method.desc.equals("()Lnet/minecraft/client/resources/palette/PalettedTextureManager;")),
+                "Armor reload must use Minecraft's live palette manager");
+            assertFalse(instructions.stream().anyMatch(method -> method.name.startsWith("getAtlas")),
+                "Palette-based equipment rendering must not resolve the old armor atlas");
+            return;
+        }
         assertEquals(armorAtlasLookup(vanilla), armorAtlasLookup(client),
             "Armor reload must use the atlas definition ID for AtlasManager, not its texture path");
     }

@@ -10,14 +10,15 @@ plugins {
 }
 
 group = "com.armaturemc"
-version = providers.gradleProperty("modVersion").orElse("0.9.3-preview").get()
+version = providers.gradleProperty("modVersion").orElse("0.9.4-preview").get()
 val minecraftVersion = providers.gradleProperty("minecraftVersion").orElse("1.21.8").get()
 val versionMatrix = Properties().apply { file("gradle/minecraft-versions.properties").inputStream().use { load(it) } }
 require(versionMatrix.containsKey("$minecraftVersion.api")) { "Unsupported Minecraft target: $minecraftVersion" }
 val unobfuscated = minecraftVersion.startsWith("26.")
 val submitted = minecraftVersion != "1.21.8"
 val modern = minecraftVersion == "1.21.11" || unobfuscated
-val next = minecraftVersion == "26.2"
+val next = minecraftVersion in setOf("26.2", "26.3")
+val renderPearl = minecraftVersion == "26.3"
 apply(plugin = if (unobfuscated) "net.fabricmc.fabric-loom" else "net.fabricmc.fabric-loom-remap")
 val loom = extensions.getByType<LoomGradleExtensionAPI>()
 layout.buildDirectory.set(layout.projectDirectory.dir("build/$minecraftVersion"))
@@ -78,6 +79,7 @@ val selectedOverlays = buildList {
     if (submitted) add("submit")
     if (unobfuscated) add("calendar")
     if (next) add("next")
+    if (renderPearl) add("26.3")
 }
 val originalSourceRoots = mainSources.java.srcDirs.toList()
 val generatedSources = layout.buildDirectory.dir("generated/main/java")
@@ -137,6 +139,11 @@ val prepareMinecraftSources = tasks.register("prepareMinecraftSources") {
                 .replace("client.getOverlay()", "client.gui.overlay()")
                 .replace("client.options.hideGui", "client.gui.hud.isHidden()")
                 .replace("getMainCamera()", "mainCamera()")
+            if (renderPearl) text = text
+                .replace("getAtlasManager().getAtlasOrThrow(net.minecraft.data.AtlasIds.ARMOR_TRIMS)", "getPalettedTextureManager()")
+                .replace("stack.mulPose(com.mojang.math.Axis.YP.rotation((float)Math.PI));",
+                    "stack.mulPose(new org.joml.Matrix4f().rotationY((float)Math.PI));")
+                .replace("VanillaRegistries.createLookup()", "VanillaRegistries.createWorldLookup()")
             val target = output.resolve(relative)
             target.parentFile.mkdirs()
             target.writeText(text)
@@ -171,7 +178,9 @@ val prepareMinecraftTests = tasks.register("prepareMinecraftTests") {
         for ((relative, source) in sources) {
             val target = output.resolve(relative)
             target.parentFile.mkdirs()
-            target.writeText(if (modern) source.readText().replace("ResourceLocation", "Identifier") else source.readText())
+            var text = if (modern) source.readText().replace("ResourceLocation", "Identifier") else source.readText()
+            if (renderPearl) text = text.replace("VanillaRegistries.createLookup()", "VanillaRegistries.createWorldLookup()")
+            target.writeText(text)
         }
     }
 }
@@ -186,6 +195,10 @@ tasks.processResources {
     if (unobfuscated) filesMatching("armature-client.mixins.json") {
         filter { line -> line.replace("JAVA_21", "JAVA_25")
             .replace("\"GameRendererAccessor\",", "\"CameraFovAccessor\",") }
+    }
+    if (renderPearl) filesMatching("armature-client.mixins.json") {
+        filter { line -> line.replace("\"EntityRenderDispatcherMixin\",",
+            "\"EntityRenderDispatcherMixin\", \"LevelExtractorMixin\",") }
     }
 }
 tasks.test { useJUnitPlatform() }

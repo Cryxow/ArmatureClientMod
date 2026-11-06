@@ -23,8 +23,8 @@ Protocol/shared behavior changes should be tested on both sides before release.
 
 ## Versioning and GitHub Releases
 
-The build defaults to 0.9.3-preview; `-PmodVersion=...` overrides it. The release
-workflow builds all eight Minecraft targets from its `v...` tag, runs headless
+The build defaults to 0.9.4-preview; `-PmodVersion=...` overrides it. The release
+workflow builds all nine Minecraft targets from its `v...` tag, runs headless
 tests and bytecode hook checks, compiles gametests, and uploads one runtime JAR
 per target with SHA256SUMS.txt. Source JARs remain available from local builds
 and Maven publishing but are excluded from CI artifacts and GitHub Releases;
@@ -53,7 +53,10 @@ is generated under the target's build directory; never edit or commit it.
 - `calendar`: 26.x applies camera animation before frustum/projection extraction
   and reads world/hand FOV separately; networking and GUI use the new API names.
   Tests initialize registry components after creating the vanilla lookup.
-- `next`: 26.2 hand submission and frame update hooks and GUI ownership changes.
+- `next`: 26.2+ hand submission and frame update hooks and GUI ownership changes.
+
+- `26.3`: first-person player/hand render states, entity culling in the level
+  extractor, equipment palettes and the world registry lookup.
 
 Resource IDs use `Identifier` and render types move to `rendertype` from 1.21.11.
 All adapters use Minecraft's
@@ -79,6 +82,8 @@ the atlas definition ID. The older `ModelManager.getAtlas` expects
 `Sheets.ARMOR_TRIMS_SHEET`, its texture path. Mixing these identifiers breaks
 the resource reload at startup. `MinecraftHooksTest` compares our armor lookup
 with vanilla equipment's constructor for every target, without starting a GPU.
+Minecraft 26.3 supplies the live `PalettedTextureManager` to equipment rendering.
+The hook test verifies this constructor and manager instead of the older atlas lookup.
 
 `ClientModelSessions` associates mutable animation and the last viewport sample
 with the protocol session UUID, rather than its current channel or asset hash.

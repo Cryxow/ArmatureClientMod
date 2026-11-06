@@ -16,7 +16,7 @@ Tests cover animation clocks, sparse bone resets, transitions, legacy transforms
 scale, armor, held items, surface separation, cache and renderer handoff. Passing
 them does not establish in-game visual compatibility. The bytecode hook test
 checks every configured injection, shadow, accessor and invoker against the
-chosen Minecraft version. CI builds all eight supported releases separately.
+chosen Minecraft version. CI builds all nine supported releases separately.
 
 For renderer changes, test connected clients for the Minecraft releases affected against a compatible
 Armature server. Check first equip and cached re-equip, rapid swaps, client

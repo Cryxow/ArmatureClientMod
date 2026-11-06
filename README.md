@@ -1,6 +1,6 @@
 # Armature Client Mod
 
-An optional, open-source **Fabric client mod for Minecraft 1.21.8 through 26.2** that renders
+An optional, open-source **Fabric client mod for Minecraft 1.21.8 through 26.3** that renders
 Armature first-person models and animations at client frame rate. Supports strict
 `.armature` v2 and legacy `.bbmodel` models, skin and armor, dynamic held items,
 viewport attachment, camera animation, procedural motion and bone physics.
@@ -23,6 +23,7 @@ snapshots and versions outside the table below are unsupported.
 | 26.1.1 | 25+ | 0.145.4+26.1.1 | 18.x |
 | 26.1.2 | 25+ | 0.155.3+26.1.2 | 18.x |
 | 26.2 | 25+ | 0.161.0+26.2 | 20.x |
+| 26.3 | 25+ | 0.165.2+26.3 | 21.x |
 
 ## Install
 
@@ -56,13 +57,13 @@ Loom downloads the Minecraft development dependencies during the build; those
 downloads are not included in this source repository or distributed mod.
 
 ```sh
-./gradlew test build compileGametestJava -PminecraftVersion=26.2
+./gradlew test build compileGametestJava -PminecraftVersion=26.3
 ```
 
 Windows PowerShell:
 
 ```powershell
-& .\gradlew.bat test build compileGametestJava -PminecraftVersion=26.2
+& .\gradlew.bat test build compileGametestJava -PminecraftVersion=26.3
 ```
 
 Omitting `minecraftVersion` targets 1.21.8. Each target is built independently;
