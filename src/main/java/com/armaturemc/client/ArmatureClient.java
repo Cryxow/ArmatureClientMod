@@ -88,6 +88,11 @@ public final class ArmatureClient implements ClientModInitializer {
     }
 
     private static void receive(ClientProtocol.Message message) {
+        if (message instanceof ClientProtocol.OpenSettings) {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.player != null) minecraft.setScreen(new ArmatureConfigScreen(minecraft.screen));
+            return;
+        }
         if (message instanceof ClientProtocol.RendererSwitch change) { handoff.prepare(change); return; }
         if (message instanceof ClientProtocol.RendererCommit commit) {
             boolean previous = handoff.active();

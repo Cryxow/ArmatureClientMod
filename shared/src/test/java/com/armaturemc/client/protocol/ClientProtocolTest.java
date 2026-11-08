@@ -42,10 +42,17 @@ class ClientProtocolTest {
     }
     @Test void pluginPayloadIsExactlyTheFabricPayloadWithoutALengthPrefix() throws Exception {
         byte[] bytes = ClientProtocol.encode(new ClientProtocol.Hello(ClientProtocol.VERSION));
-        assertArrayEquals(new byte[]{0,0,0,9,0,0,0,0,9}, bytes);
+        assertArrayEquals(new byte[]{0,0,0,10,0,0,0,0,10}, bytes);
         assertEquals(new ClientProtocol.Hello(ClientProtocol.VERSION), ClientProtocol.decode(bytes));
     }
+    @Test void settingsRequestUsesTheProtocol10OpcodeWithoutAPayload() throws Exception {
+        byte[] bytes = {0, 0, 0, 10, 10};
+        assertArrayEquals(bytes, ClientProtocol.encode(new ClientProtocol.OpenSettings()));
+        assertEquals(new ClientProtocol.OpenSettings(), ClientProtocol.decode(bytes));
+    }
     @Test void previousPeersCannotNegotiateOwnershipOffersAndEarlyCachedReadiness() {
+        assertThrows(IllegalArgumentException.class, () ->
+            ClientProtocol.decode(new byte[]{0,0,0,9,0,0,0,0,9}));
         assertThrows(IllegalArgumentException.class, () ->
             ClientProtocol.decode(new byte[]{0,0,0,8,0,0,0,0,8}));
         assertThrows(IllegalArgumentException.class, () ->

@@ -23,7 +23,7 @@ Protocol/shared behavior changes should be tested on both sides before release.
 
 ## Versioning and GitHub Releases
 
-The build defaults to 0.9.4-preview; `-PmodVersion=...` overrides it. The release
+The build defaults to 0.9.5-preview. `-PmodVersion=...` overrides it. The release
 workflow builds all nine Minecraft targets from its `v...` tag, runs headless
 tests and bytecode hook checks, compiles gametests, and uploads one runtime JAR
 per target with SHA256SUMS.txt. Source JARs remain available from local builds

@@ -33,6 +33,7 @@ final class ClientAnimation {
     private NativeMotionSampler motion;
     private long captureAt, sampledAt = Long.MIN_VALUE;
     private NativePose sampledPose;
+    private NativePose heldPose;
     private NativeBonePhysics physics;
     private final Set<String> physicsBones = new HashSet<>();
     private String cameraBone;
@@ -101,6 +102,7 @@ final class ClientAnimation {
         double max = Math.toRadians(number(camera, "maximumDegrees", 7));
         if (camera.has("clamp") && camera.get("clamp").getAsBoolean() && angle > max && angle > 1e-6)
             q = new org.joml.Quaternionf().slerp(q, (float)(max / angle));
+        q = new org.joml.Quaternionf().slerp(q, (float) Math.clamp(number(camera, "intensity", 1), 0, 1));
         // Shader reprojection needs a crop margin; rotating the actual camera does not.
         return new ClientCameraEffect(q);
     }
@@ -115,7 +117,7 @@ final class ClientAnimation {
         offsets = previousOffsets = Map.of(); offsetsAt = 0;
         // A different session must not inherit the last model's spring velocity.
         motion = null; physics = null;
-        sampledAt = Long.MIN_VALUE; sampledPose = null;
+        sampledAt = Long.MIN_VALUE; sampledPose = heldPose = null;
     }
 
     void receive(ClientProtocol.Frame frame, long now, MolangContext viewer) {
@@ -123,6 +125,10 @@ final class ClientAnimation {
         double previousElapsed = receivedAt == 0 ? 0 : Math.max(0, (now - receivedAt) / 1e9);
         JsonObject next = JsonParser.parseString(frame.control()).getAsJsonObject();
         validate(next);
+        boolean paused = next.has("paused") && next.get("paused").getAsBoolean();
+        if (paused && heldPose == null && receivedAt != 0) {
+            heldPose = sampledPose != null ? sampledPose : sample(now, viewer);
+        }
         long nextTransition = next.has("transition") ? next.get("transition").getAsLong() : 0;
         if (nextTransition != transitionId) {
             // Start from the last displayed pose, with its real render-frame Molang context.
@@ -134,6 +140,7 @@ final class ClientAnimation {
             // Its running fade must finish instead of snapping to the target.
             transitionId = nextTransition;
         }
+        if (!paused) heldPose = null;
         boolean first = receivedAt == 0;
         Map<String, AdditivePose> adjusted = new HashMap<>();
         for (var bone : frame.bones()) {
@@ -149,7 +156,8 @@ final class ClientAnimation {
         // A server snapshot changes selection and additives, not the running local clock.
         // Preserve an unchanged epoch across jittery 20 Hz deliveries.
         for (String key : List.of("loop", "action")) {
-            if (first || !previousControl.has(key) || !control.has(key)) continue;
+            if (first || paused || previousControl.has("paused") && previousControl.get("paused").getAsBoolean()
+                    || !previousControl.has(key) || !control.has(key)) continue;
             var before = previousControl.getAsJsonObject(key); var current = control.getAsJsonObject(key);
             if (Objects.equals(before.get("name"), current.get("name"))
                 && Objects.equals(before.get("epoch"), current.get("epoch"))
@@ -229,6 +237,10 @@ final class ClientAnimation {
     }
 
     private NativePose pose(double elapsed, MolangContext viewer, long now) {
+        if (control.has("paused") && control.get("paused").getAsBoolean()) {
+            if (heldPose != null) return heldPose;
+            elapsed = 0;
+        }
         NativePose result = identity;
         var loop = layer("loop", elapsed, false);
         if (loop != null) result = mixer.blend(result, evaluator.evaluate(loop.clip.animation(), loop.clip.timeSeconds(),

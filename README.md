@@ -35,9 +35,12 @@ snapshots and versions outside the table below are unsupported.
    installable JARs; developers can use GitHub's source archives or clone the repository.
 4. Optionally install [Mod Menu](https://modrinth.com/mod/modmenu), using the table.
 5. Connect to a server using the compatible Armature plugin with client rendering
-   enabled and the native renderer selected. The current client speaks protocol **9**.
+   enabled and the native renderer selected. Armature Client **0.9.5-preview**
+   uses protocol **10**, matching Armature 2.0.0.
 
-With Mod Menu: **Mods → Armature Client → Configure** toggles client rendering.
+Use `/arm settings` on the server or **Mods → Armature Client → Configure** in
+Mod Menu to toggle client rendering. The client applies the server's personal
+camera movement intensity setting.
 Without Mod Menu, set `renderingEnabled` in `config/armature-client.json` before
 starting Minecraft. The preference defaults to `true`.
 

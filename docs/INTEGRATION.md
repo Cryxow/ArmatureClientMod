@@ -2,7 +2,7 @@
 
 Choose a supported Minecraft release and use Fabric Loom with the same mapping namespace as
 your host project. Fabric API must be installed. Keep the Armature server plugin
-compatible with the client protocol; the current version speaks protocol 9.
+compatible with the client protocol; the current version speaks protocol 10.
 
 ## Depend on the existing mod
 
@@ -17,7 +17,7 @@ In your own Fabric project's `build.gradle.kts`:
 ```kotlin
 repositories { mavenLocal() }
 dependencies {
-    modImplementation("com.armaturemc:armature-client-fabric-1.21.8:0.9.4-preview")
+    modImplementation("com.armaturemc:armature-client-fabric-1.21.8:0.9.5-preview")
 }
 ```
 
@@ -26,8 +26,8 @@ nest Armature Client instead:
 
 ```kotlin
 dependencies {
-    modImplementation("com.armaturemc:armature-client-fabric-1.21.8:0.9.4-preview")
-    include("com.armaturemc:armature-client-fabric-1.21.8:0.9.4-preview")
+    modImplementation("com.armaturemc:armature-client-fabric-1.21.8:0.9.5-preview")
+    include("com.armaturemc:armature-client-fabric-1.21.8:0.9.5-preview")
 }
 ```
 
@@ -44,7 +44,7 @@ For Minecraft 26.x, build the exact target and use ordinary `implementation`
 instead of `modImplementation`, with the `net.fabricmc.fabric-loom` plugin.
 These versions are unobfuscated and require Java 25; do not reuse a 1.21.x JAR.
 For example the 26.2 coordinate is
-`com.armaturemc:armature-client-fabric-26.2:0.9.4-preview`.
+`com.armaturemc:armature-client-fabric-26.2:0.9.5-preview`.
 
 ## Use your own settings screen
 

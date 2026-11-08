@@ -13,7 +13,8 @@ public final class ClientProtocol {
     // Version 7 coordinates resource reload completion before switching renderer ownership.
     // Version 8 sends session-owned held-item snapshots before the visibility frame.
     // Version 9 retains an outgoing channel for every hotbar presentation in either hand.
-    public static final int VERSION = 9;
+    // Version 10 lets the server open the installed client's settings screen.
+    public static final int VERSION = 10;
     public static final int MAX_HELD_ITEM = 12_000;
     public static final int MODEL_CHANNELS = 20;
     public static final int MAX_PACKET = 30_000;
@@ -25,7 +26,7 @@ public final class ClientProtocol {
     public static final long FRAME_TIMEOUT_NANOS = 1_000_000_000L;
 
     private ClientProtocol() { }
-    public sealed interface Message permits Hello, ModelChunk, Ready, Frame, Clear, Options, RendererSwitch, RendererReady, RendererCommit, HeldItems { }
+    public sealed interface Message permits Hello, ModelChunk, Ready, Frame, Clear, Options, RendererSwitch, RendererReady, RendererCommit, HeldItems, OpenSettings { }
     /** Compressed vanilla item NBT; zero bytes represent an empty hand. */
     public record HeldItems(int slot, UUID session, byte[] main, byte[] off) implements Message {
         public HeldItems {
@@ -40,6 +41,8 @@ public final class ClientProtocol {
     public record RendererSwitch(UUID token, UUID pack, boolean client) implements Message { }
     public record RendererReady(UUID token) implements Message { }
     public record RendererCommit(UUID token, boolean client) implements Message { }
+    /** Server request to show the Armature client settings screen. */
+    public record OpenSettings() implements Message { }
     public record ModelChunk(int slot, String hash, int totalBytes, int index, byte[] bytes) implements Message {
         public ModelChunk { bytes = bytes.clone(); }
         @Override public byte[] bytes() { return bytes.clone(); }
@@ -128,7 +131,7 @@ public final class ClientProtocol {
                 out.writeByte(9); out.writeByte(slot(m.slot())); writeUuid(out, m.session());
                 out.writeInt(m.main.length); out.write(m.main);
                 out.writeInt(m.off.length); out.write(m.off);
-            }
+            } else if (message instanceof OpenSettings) out.writeByte(10);
             else throw new IllegalArgumentException("Unknown message");
             out.flush(); check(bytes.size() <= MAX_PACKET, "Packet size"); return bytes.toByteArray();
         } catch (IOException e) { throw new UncheckedIOException(e); }
@@ -173,6 +176,7 @@ public final class ClientProtocol {
             case 6 -> new RendererSwitch(readUuid(in), readUuid(in), in.readBoolean());
             case 7 -> new RendererReady(readUuid(in));
             case 8 -> new RendererCommit(readUuid(in), in.readBoolean());
+            case 10 -> new OpenSettings();
             default -> throw new IOException("Unknown message type");
         };
         check(in.available() == 0, "Trailing payload bytes"); return result;

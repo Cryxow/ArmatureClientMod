@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "com.armaturemc"
-version = providers.gradleProperty("modVersion").orElse("0.9.4-preview").get()
+version = providers.gradleProperty("modVersion").orElse("0.9.5-preview").get()
 val minecraftVersion = providers.gradleProperty("minecraftVersion").orElse("1.21.8").get()
 val versionMatrix = Properties().apply { file("gradle/minecraft-versions.properties").inputStream().use { load(it) } }
 require(versionMatrix.containsKey("$minecraftVersion.api")) { "Unsupported Minecraft target: $minecraftVersion" }
@@ -136,6 +136,7 @@ val prepareMinecraftSources = tasks.register("prepareMinecraftSources") {
             if (next) text = text.replace("\"renderHandsWithItems\"", "\"submitHandsWithItems\"")
                 .replace("\"renderArmWithItem\"", "\"submitArmWithItem\"")
                 .replace("minecraft.setScreen(", "minecraft.gui.setScreen(")
+                .replace("new ArmatureConfigScreen(minecraft.screen)", "new ArmatureConfigScreen(minecraft.gui.screen())")
                 .replace("client.getOverlay()", "client.gui.overlay()")
                 .replace("client.options.hideGui", "client.gui.hud.isHidden()")
                 .replace("getMainCamera()", "mainCamera()")

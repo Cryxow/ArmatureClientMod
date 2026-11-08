@@ -1,7 +1,7 @@
 # Armature client protocol
 
 The source of truth is `shared/src/main/java/com/armaturemc/client/protocol/ClientProtocol.java`.
-This snapshot uses **version 9** on the play-phase channel `armature:client`.
+This snapshot uses **version 10** on the play-phase channel `armature:client`.
 Messages begin with the protocol version as a big-endian 32-bit integer, followed
 by an unsigned-byte opcode. Strings use the codec's Java DataInput/DataOutput
 encoding, not Minecraft's generic packet string encoding. Use the shared codec
@@ -19,6 +19,7 @@ rather than maintaining a second implementation.
 | 7 | RendererReady | Client → server | Matching transition token, after resource reload completion |
 | 8 | RendererCommit | Server → client | Commit the prepared renderer transition |
 | 9 | HeldItems | Server → client | Session-owned compressed vanilla item NBT snapshots |
+| 10 | OpenSettings | Server → client | Open the local Armature settings screen |
 
 ## Invariants
 
@@ -32,7 +33,8 @@ rather than maintaining a second implementation.
   The plugin waits for the incoming bundle before activating its equip animation.
 - Renderer ownership changes must preserve the pack/reload token handshake.
   A UI preference change alone does not complete a switch.
-- Protocol 9 exposes 20 model channels for active/outgoing hand presentations.
+- Protocol 10 retains the 20 model channels introduced in protocol 9 for
+  active/outgoing hand presentations.
   Obtain channel assignments from the matching server implementation; they are
   not interchangeable with the older four-channel protocol 8.
 - Unkeyed bones/channels use their neutral animated transform: translation and

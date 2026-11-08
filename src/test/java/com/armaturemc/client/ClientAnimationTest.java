@@ -9,6 +9,23 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ClientAnimationTest {
+    @Test void reclaimedUnequipKeepsItsDisplayedPoseWhileEquipReadinessIsPending() {
+        var animation = new ClientAnimation(JsonParser.parseString(document()).getAsJsonObject());
+        var bone = new ClientProtocol.Bone("bone", true);
+        UUID session = UUID.randomUUID(); long start = 1_000_000_000L;
+        animation.receive(frame(session, 1, 0, bone), start, MolangContext.defaults());
+        var displayed = animation.matrices(start + 400_000_000L, MolangContext.defaults(), List.of(bone)).get("bone");
+        var paused = new ClientProtocol.Frame(0, session, "a".repeat(64), 2, true, new int[0], List.of(bone),
+            ClientProtocol.View.defaults(), "{\"paused\":true,\"loop\":{\"name\":\"move\",\"epoch\":1,\"elapsed\":0.4}}");
+        animation.receive(paused, start + 410_000_000L, MolangContext.defaults());
+        assertTrue(displayed.equals(animation.matrices(start + 800_000_000L,
+            MolangContext.defaults(), List.of(bone)).get("bone"), 1e-6f));
+        animation.receive(new ClientProtocol.Frame(0, session, "a".repeat(64), 3, true, new int[0], List.of(bone),
+            ClientProtocol.View.defaults(), "{\"loop\":{\"name\":\"move\",\"epoch\":2,\"elapsed\":0},\"transition\":42,\"transitionRemaining\":0.2}"),
+            start + 800_000_000L, MolangContext.defaults());
+        assertTrue(displayed.equals(animation.matrices(start + 800_000_000L,
+            MolangContext.defaults(), List.of(bone)).get("bone"), 1e-6f));
+    }
     @Test void unkeyedBonesAndChannelsReturnToRestDuringAndAfterAClipReplacement() {
         for (String emptyAnimator : new String[]{"", ",\"orphan\":{\"type\":\"bone\",\"keyframes\":[]}"}) {
             var doc = JsonParser.parseString("""
@@ -72,6 +89,27 @@ class ClientAnimationTest {
             assertEquals(2, animation.matrices(now, MolangContext.defaults(), List.of(bone)).get("bone").m30(), 1e-6);
         }
     }
+    @Test void cameraIntensityScalesRotationWithoutChangingAnimatedModelPose() {
+        var doc = JsonParser.parseString(document().replace("\"position\"", "\"rotation\"")).getAsJsonObject();
+        doc.getAsJsonArray("groups").get(0).getAsJsonObject().addProperty("clientCamera", true);
+        long now = 1_000_000_000L;
+        float fullAngle = 0;
+        Matrix4f fullPose = null;
+        for (double intensity : new double[]{1, .5, 0}) {
+            var animation = new ClientAnimation(doc);
+            animation.configure(JsonParser.parseString("{\"camera\":{\"enabled\":true,\"intensity\":" + intensity + "}}").getAsJsonObject());
+            var bone = new ClientProtocol.Bone("bone", true);
+            animation.receive(frame(UUID.randomUUID(), 1, .5, bone), now, MolangContext.defaults());
+            var effect = animation.cameraEffect(now, MolangContext.defaults());
+            var pose = animation.matrices(now, MolangContext.defaults(), List.of(bone)).get("bone");
+            if (intensity == 1) { fullAngle = effect.viewRotation().angle(); fullPose = new Matrix4f(pose); }
+            assertTrue(fullAngle > 0);
+            assertEquals(fullAngle * intensity, effect.viewRotation().angle(), 1e-4);
+            assertTrue(fullPose.equals(pose, 1e-6f));
+            assertEquals(intensity > 0, effect.rotates());
+        }
+    }
+
     @Test void serverReprojectionZoomSettingsCannotChangePlayerFovInClientCameraMode() {
         var doc = JsonParser.parseString(document().replace("\"position\"", "\"rotation\"")).getAsJsonObject();
         doc.getAsJsonArray("groups").get(0).getAsJsonObject().addProperty("clientCamera", true);
